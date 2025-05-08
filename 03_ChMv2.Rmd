@@ -1,0 +1,98 @@
+---
+title: "03_ChM"
+author: "Léna et Victor"
+date: "2025-05-07"
+output: 
+  html_document: 
+    number_sections: yes
+    toc: yes
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  cache = TRUE,
+  eval = TRUE,
+  warning = FALSE
+)
+```
+
+
+```{r library, include=FALSE}
+#Charger les packages utiles
+library(dplyr)
+library(sf)
+library(readr)
+library(mapview)
+library(mapsf)
+library(tmap)
+```
+
+```{r data}
+#Importer les données
+#Importer les données spatiales
+
+geo <-st_read("C:/Users/morea/OneDrive/Documents/00. APPRENDRE/L3 - Géographie/S2 - 03 - SIG/Ressources carto/communes.geojson")
+pistes <-st_read("C:/Users/morea/OneDrive/Documents/00. APPRENDRE/L3 - Géographie/S2 - 03 - SIG/Ressources carto/ame_velo_dept17.geojson")
+
+
+#Importer la base de données
+
+data <-read_csv2("C:/Users/morea/OneDrive/Documents/00. APPRENDRE/L3 - Géographie/S2 - 03 - SIG/Ressources Data/parts_modales_nouvelle_aquitaine_2021.csv")
+show_col_types = FALSE
+```
+
+
+```{r join}
+#Jointure attributaire
+geo_data <- geo %>%
+  left_join(data, by = "code_insee")
+```
+
+```{r carto1}
+#Representer les pistes cyclables
+library(tmap)
+tmap_mode("plot")
+tm_shape(geo) +
+  tm_polygons(fill.alpha = 0.2, border.col = "grey70", col = "grey80" )+
+  tm_shape(pistes)+
+  tm_lines(col = "#49006a")+
+  tm_layout(main.title = "Aménagements cyclables en Charente-Maritime")
+```
+
+```{r carto2}
+#Representer les donnees d'usage dans le département
+library(tmap)
+tmap_mode("plot")
+rose_palette <- c("#fde0dd", "#fa9fb5", "#c51b8a", "#7a009a","#49006a")
+
+tm_shape(geo_data) +
+  tm_polygons("pm_velo", 
+              style = "jenks",
+              n = 5,
+              palette = rose_palette,
+              title = "Part modale du vélo (%) dans les trajets domicile-travail") +   
+  tm_layout(main.title = "Part modale du vélo en Charente-Maritime dans les déplacements domicile-travail par commune en 2021")
+
+          
+```
+
+```{r carto3}
+#Representer les donnees d'usage dans le département (bis)
+
+library(sf)
+nb_velo <- st_centroid(geo_data)
+# Vérification : présnece de la variable xvelo 
+nb_velo$xvelo <- geo_data$xvelo  
+
+library(tmap)
+tmap_mode("plot")
+tm_shape(geo_data) +
+  tm_polygons(fill.alpha = 0.2, border.col = "grey70", col = "grey80") +
+  tm_shape(nb_velo) +
+  tm_symbols(size = "xvelo", border.col = "blue", col = "blue") +
+  tm_layout(main.title = "Nombre de personnes utilisant le vélo comme mode de transport principal dans les déplacements domicile-travail par commune de Charente-Maritime (INSEE, 2021)")
+
